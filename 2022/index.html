@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calendario 2022 — Chile (español)</title>
+  <style>
+    :root{
+      --bg:#f7f7fb;
+      --card:#fff;
+      --accent:#c0392b;
+      --weekend:#f0f0f5;
+      --holiday:#ffefef;
+      --text:#222;
+      --muted:#666;
+      --border:#e3e6ea;
+    }
+    body{
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      margin: 20px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header{ text-align:center; margin-bottom: 18px; }
+    h1{ margin: 6px 0; font-size: 1.6rem; }
+    p.lead{ margin:0; color:var(--muted) }
+
+    .months {
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items:start;
+    }
+    .month {
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:10px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+    }
+    .month-name {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    .month-name h2 { margin:0; font-size:1.05rem; }
+    .month-name small { color:var(--muted); font-size:.85rem }
+
+    table.calendar {
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      font-size:0.95rem;
+    }
+    .calendar th{
+      font-weight:600;
+      color:var(--muted);
+      padding:6px 4px;
+      text-align:center;
+      font-size:.85rem;
+    }
+    .calendar td{
+      width:14.2857%;
+      height:64px;
+      vertical-align:top;
+      padding:6px 6px 4px 6px;
+      border-top:1px solid var(--border);
+      border-left:1px solid transparent;
+      position:relative;
+      background:transparent;
+    }
+    .calendar td.weekend{ background:var(--weekend); }
+    .calendar td.inactive { color: #bbb; background: transparent; }
+    .calendar .daynum{
+      font-weight:600;
+      display:block;
+      margin-bottom:4px;
+    }
+    .holiday{
+      background: linear-gradient(0deg, var(--holiday), rgba(255,255,255,0.6));
+      border-radius:6px;
+      padding:6px;
+      box-sizing:border-box;
+      color:var(--accent);
+      border:1px solid rgba(192,57,43,0.08);
+    }
+    .holiday .label{
+      display:block;
+      font-size:.78rem;
+      color:var(--accent);
+      margin-top:4px;
+    }
+    .legend{
+      margin-top:14px;
+      padding:10px;
+      border:1px dashed var(--border);
+      background:#fff;
+      border-radius:8px;
+    }
+    .legend h3{ margin:0 0 8px 0; font-size:1rem }
+    .legend ul{ margin:0; padding-left:18px; color:var(--muted) }
+    .legend li{ margin-bottom:6px }
+
+    footer{ margin-top:18px; color:var(--muted); font-size:.9rem; text-align:center; }
+
+    /* Responsive */
+    @media (max-width:1000px){ .months{ grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width:640px){
+      .months{ grid-template-columns: 1fr; }
+      .calendar td{ height:58px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Calendario 2022 — Chile</h1>
+    <p class="lead">Meses de 2022 en español (semanas empezando en Lunes). Feriados nacionales marcados en rojo.</p>
+  </header>
+
+  <main>
+    <div class="months" id="monthsContainer"></div>
+
+    <div class="legend" id="legend">
+      <h3>Feriados nacionales (Chile) — 2022</h3>
+      <ul id="holidaysList"></ul>
+      <p style="margin-top:8px; color:var(--muted); font-size:.9rem;">
+        Nota: la lista incluye los feriados nacionales observados en 2022; algunos feriados pueden moverse por disposiciones especiales o existir feriados regionales adicionales.
+      </p>
+    </div>
+  </main>
+
+  <footer>Guardar este archivo como <code>calendar-2022-chile.html</code> y ábralo en un navegador.</footer>
+
+  <script>
+    (function(){
+      const year = 2022;
+      const monthNames = [
+        "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+        "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+      ];
+      const weekDayNames = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+
+      // Feriados en formato YYYY-MM-DD : "Nombre en español"
+      // Basado en observaciones públicas para Chile 2022.
+      const holidays = {
+        "2022-01-01": "Año Nuevo",
+        "2022-04-15": "Viernes Santo",
+        "2022-04-16": "Sábado Santo",
+        "2022-05-01": "Día del Trabajador",
+        "2022-05-21": "Día de las Glorias Navales",
+        "2022-06-21": "Día Nacional de los Pueblos Indígenas",
+        "2022-06-27": "San Pedro y San Pablo (observado)",
+        "2022-07-16": "Virgen del Carmen",
+        "2022-08-15": "Asunción de la Virgen",
+        "2022-09-16": "Feriado por Fiestas Patrias (puente)",
+        "2022-09-18": "Día de la Independencia (Fiestas Patrias)",
+        "2022-09-19": "Día de las Glorias del Ejército",
+        "2022-10-10": "Encuentro de Dos Mundos (observado)",
+        "2022-10-31": "Día Nacional de las Iglesias Evangélicas y Protestantes",
+        "2022-11-01": "Día de Todos los Santos",
+        "2022-12-08": "Inmaculada Concepción",
+        "2022-12-25": "Navidad"
+      };
+
+      const pad = n => n < 10 ? '0'+n : ''+n;
+      const keyFor = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+
+      function createMonth(year, monthIndex){
+        const firstDay = new Date(year, monthIndex, 1);
+        const lastDay = new Date(year, monthIndex + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const firstWeekday = (firstDay.getDay() + 6) % 7; // Monday=0
+
+        const table = document.createElement('table');
+        table.className = 'calendar';
+
+        const thead = document.createElement('thead');
+        const theadRow = document.createElement('tr');
+        for (let wd of weekDayNames){
+          const th = document.createElement('th');
+          th.textContent = wd;
+          theadRow.appendChild(th);
+        }
+        thead.appendChild(theadRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        let day = 1;
+        for (let week = 0; week < 6; week++){
+          const tr = document.createElement('tr');
+          for (let wd = 0; wd < 7; wd++){
+            const td = document.createElement('td');
+            const cellIndex = week * 7 + wd;
+            if (cellIndex >= firstWeekday && day <= daysInMonth){
+              const dateKey = keyFor(year, monthIndex, day);
+              const daynum = document.createElement('span');
+              daynum.className = 'daynum';
+              daynum.textContent = day;
+              if (wd >= 5) td.classList.add('weekend');
+
+              if (holidays[dateKey]) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'holiday';
+                wrapper.title = holidays[dateKey] + " — " + dateKey;
+                wrapper.appendChild(daynum);
+                const lbl = document.createElement('span');
+                lbl.className = 'label';
+                lbl.textContent = holidays[dateKey];
+                wrapper.appendChild(lbl);
+                td.appendChild(wrapper);
+              } else {
+                td.appendChild(daynum);
+              }
+
+              td.setAttribute('data-date', dateKey);
+              day++;
+            } else {
+              td.classList.add('inactive');
+              td.textContent = '';
+            }
+            tr.appendChild(td);
+          }
+          tbody.appendChild(tr);
+        }
+
+        table.appendChild(tbody);
+        return table;
+      }
+
+      // Render months
+      const container = document.getElementById('monthsContainer');
+      for (let m = 0; m < 12; m++){
+        const div = document.createElement('div');
+        div.className = 'month';
+        const header = document.createElement('div');
+        header.className = 'month-name';
+        const h2 = document.createElement('h2');
+        h2.textContent = monthNames[m];
+        const small = document.createElement('small');
+        small.textContent = year;
+        header.appendChild(h2);
+        header.appendChild(small);
+        div.appendChild(header);
+        div.appendChild(createMonth(year, m));
+        container.appendChild(div);
+      }
+
+      // Populate legend
+      const holidaysList = document.getElementById('holidaysList');
+      Object.keys(holidays).sort().forEach(k => {
+        const li = document.createElement('li');
+        const [y,mo,da] = k.split('-');
+        li.textContent = `${da}/${mo}/${y} — ${holidays[k]}`;
+        holidaysList.appendChild(li);
+      });
+
+    })();
+  </script>
+</body>
+</html>
