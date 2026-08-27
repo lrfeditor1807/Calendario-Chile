@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calendario 2026 — Chile (español)</title>
+  <style>
+    :root{
+      --bg:#f7f7fb;
+      --card:#fff;
+      --accent:#b71c1c;
+      --weekend:#f0f0f5;
+      --holiday:#fff0f0;
+      --text:#222;
+      --muted:#666;
+      --border:#e6e9ee;
+    }
+    body{
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 20px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header { text-align:center; margin-bottom:16px; }
+    h1 { margin:6px 0; font-size:1.5rem; }
+    p.lead { margin:0; color:var(--muted); }
+
+    .months {
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items:start;
+    }
+    .month {
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:10px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+    }
+    .month-name {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .month-name h2 { margin:0; font-size:1.05rem; }
+    .month-name small { color:var(--muted); font-size:.85rem }
+
+    table.calendar {
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      font-size:0.95rem;
+    }
+    .calendar th {
+      font-weight:600;
+      color:var(--muted);
+      padding:6px 4px;
+      text-align:center;
+      font-size:.85rem;
+    }
+    .calendar td {
+      width:14.2857%;
+      height:66px;
+      vertical-align:top;
+      padding:6px;
+      border-top:1px solid var(--border);
+      position:relative;
+      background:transparent;
+    }
+    .calendar td.weekend { background:var(--weekend); }
+    .calendar td.inactive { color:#bbb; background:transparent; }
+    .daynum { font-weight:700; display:block; margin-bottom:6px; }
+
+    .holiday {
+      background: linear-gradient(0deg, var(--holiday), rgba(255,255,255,0.6));
+      border-radius:6px;
+      padding:6px;
+      box-sizing:border-box;
+      color:var(--accent);
+      border:1px solid rgba(183,28,28,0.08);
+    }
+    .holiday .label { display:block; font-size:.78rem; margin-top:4px; color:var(--accent); }
+
+    .legend {
+      margin-top:14px;
+      padding:10px;
+      border:1px dashed var(--border);
+      background:#fff;
+      border-radius:8px;
+    }
+    .legend h3 { margin:0 0 8px 0; font-size:1rem; }
+    .legend ul { margin:0; padding-left:18px; color:var(--muted); }
+    .legend li { margin-bottom:6px; }
+
+    footer { margin-top:16px; color:var(--muted); font-size:.9rem; text-align:center; }
+
+    @media (max-width:1000px) { .months { grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:640px) { .months { grid-template-columns:1fr; } .calendar td { height:56px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Calendario 2026 — Chile</h1>
+    <p class="lead">Año 2026 — semanas empezando el lunes. Feriados nacionales marcados en rojo.</p>
+  </header>
+
+  <main>
+    <div class="months" id="monthsContainer"></div>
+
+    <div class="legend">
+      <h3>Feriados nacionales (Chile) — 2026</h3>
+      <ul id="holidaysList"></ul>
+      <p style="margin-top:8px;color:var(--muted);font-size:.9rem;">
+        Nota: la lista incluye los feriados nacionales más habituales en 2026; algunos feriados pueden moverse por disposiciones especiales o existir feriados regionales adicionales.
+      </p>
+    </div>
+  </main>
+
+  <footer>Guardar este archivo como <code>calendar-2026-chile.html</code> y ábralo en un navegador.</footer>
+
+  <script>
+  (function(){
+    const year = 2026;
+    const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+    const weekDayNames = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+
+    // Feriados nacionales en Chile para 2026 (formato YYYY-MM-DD -> etiqueta en español)
+    // Basado en observaciones públicas: fechas fijas y religiosas (Pascua).
+    const holidays = {
+      "2026-01-01": "Año Nuevo",
+      "2026-04-03": "Viernes Santo",
+      "2026-04-04": "Sábado Santo",
+      "2026-05-01": "Día del Trabajador",
+      "2026-05-21": "Día de las Glorias Navales",
+      "2026-06-29": "San Pedro y San Pablo",
+      "2026-07-16": "Virgen del Carmen",
+      "2026-08-15": "Asunción de la Virgen",
+      "2026-09-18": "Día de la Independencia (Fiestas Patrias)",
+      "2026-09-19": "Día de las Glorias del Ejército",
+      "2026-10-12": "Día del Encuentro de Dos Mundos",
+      "2026-10-31": "Día Nacional de las Iglesias Evangélicas y Protestantes",
+      "2026-11-01": "Día de Todos los Santos",
+      "2026-12-08": "Inmaculada Concepción",
+      "2026-12-25": "Navidad"
+    };
+
+    const pad = n => n < 10 ? '0'+n : ''+n;
+    const dateKey = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+
+    function createMonth(y, mIndex) {
+      const first = new Date(y, mIndex, 1);
+      const last = new Date(y, mIndex + 1, 0);
+      const daysInMonth = last.getDate();
+      // Convert JS getDay (0=Sun..6=Sat) to Monday=0..Sunday=6
+      const firstWeekday = (first.getDay() + 6) % 7;
+
+      const table = document.createElement('table');
+      table.className = 'calendar';
+
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      weekDayNames.forEach(wd => {
+        const th = document.createElement('th');
+        th.textContent = wd;
+        headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      let day = 1;
+      for (let week=0; week<6; week++) {
+        const tr = document.createElement('tr');
+        for (let wd=0; wd<7; wd++) {
+          const td = document.createElement('td');
+          const cellIndex = week*7 + wd;
+          if (cellIndex >= firstWeekday && day <= daysInMonth) {
+            const key = dateKey(y, mIndex, day);
+            const span = document.createElement('span');
+            span.className = 'daynum';
+            span.textContent = day;
+
+            if (wd >= 5) td.classList.add('weekend');
+
+            if (holidays[key]) {
+              const wrap = document.createElement('div');
+              wrap.className = 'holiday';
+              wrap.title = holidays[key] + " — " + key;
+              wrap.appendChild(span);
+              const lbl = document.createElement('span');
+              lbl.className = 'label';
+              lbl.textContent = holidays[key];
+              wrap.appendChild(lbl);
+              td.appendChild(wrap);
+            } else {
+              td.appendChild(span);
+            }
+
+            td.setAttribute('data-date', key);
+            day++;
+          } else {
+            td.classList.add('inactive');
+          }
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      return table;
+    }
+
+    // Render months
+    const container = document.getElementById('monthsContainer');
+    for (let m=0; m<12; m++) {
+      const box = document.createElement('div');
+      box.className = 'month';
+      const header = document.createElement('div');
+      header.className = 'month-name';
+      const h2 = document.createElement('h2');
+      h2.textContent = monthNames[m];
+      const small = document.createElement('small');
+      small.textContent = year;
+      header.appendChild(h2);
+      header.appendChild(small);
+      box.appendChild(header);
+      box.appendChild(createMonth(year, m));
+      container.appendChild(box);
+    }
+
+    // Populate legend
+    const list = document.getElementById('holidaysList');
+    Object.keys(holidays).sort().forEach(k => {
+      const li = document.createElement('li');
+      const [y,mm,dd] = k.split('-');
+      li.textContent = `${dd}/${mm}/${y} — ${holidays[k]}`;
+      list.appendChild(li);
+    });
+  })();
+  </script>
+</body>
+</html>
